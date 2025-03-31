@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>easy sorting algorithm generator v2</title>
+  <style>
+    html,
+    body {
+      margin: 0px;
+      height: 100%
+    }
+
+    body {
+      background: #000;
+      width: 100%;
+      height: 100%;
+      padding: 10px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: flex-end;
+      overflow: hidden;
+      gap: 1px;
+    }
+
+    div {
+      width: 100%;
+      /*min-width: 0px;*/
+    }
+  </style>
+</head>
+
+<body>
+
+  <script>
+    (() => {
+      let arrayAccess = 0;
+      let comparison = 0;
+
+      const num = 16
+
+      const random = (min, max) => {
+        return Math.floor(Math.random() * (max - min + 1) + min)
+      }
+
+      // #region render pack
+      let render_instruct = [];
+      const colors = {
+        default: "#fff",
+        select: "#00f",
+        compare: "#f00",
+        swap: "#f0f",
+      }
+
+      const render_default = (idx) => {
+        render_instruct.push({
+          type: "color",
+          index: idx,
+          value: colors.default
+        })
+      }
+
+      const render_select = (idx) => {
+        render_instruct.push({
+          type: "color",
+          index: idx,
+          value: colors.select
+        })
+      }
+
+      const render_compare = (idx) => {
+        render_instruct.push({
+          type: "color",
+          index: idx,
+          value: colors.compare
+        })
+      }
+
+      const render_swap = (idx0, idx1) => {
+        render_instruct.push({
+          type: "multi",
+          instruct: [
+            {
+              type: "color",
+              index: idx0,
+              value: colors.swap
+            },
+            {
+              type: "color",
+              index: idx1,
+              value: colors.swap
+            },
+          ]
+        })
+        render_instruct.push({
+          type: "swap",
+          index0: idx0,
+          index1: idx1
+        })
+        render_instruct.push({
+          type: "multi",
+          instruct: [
+            {
+              type: "color",
+              index: idx0,
+              value: colors.default
+            },
+            {
+              type: "color",
+              index: idx1,
+              value: colors.default
+            },
+          ]
+        })
+      }
+
+      // #region easy starter pack
+      let easy_array = [];
+      let easy_elements = [];
+
+      const easy_create = (n) => {
+        for (let i = 0; i < n; i++) {
+          easy_array[i] = i + 1;
+
+          const rect = document.createElement("div");
+          rect.setAttribute("style", `height: ${((i + 1) / num) * 100}%; order: ${i}; background: white`);
+          document.querySelector("body").appendChild(rect);
+        }
+      }
+
+      const easy_loop = (min, max, func) => {
+        for (let i = min; i <= max; i++) {
+          render_select(i);
+          func(i);
+          render_default(i);
+        }
+      }
+
+      const easy_randomize = () => {
+
+      }
+
+      const easy_compare = (idx0, idx1) => { // compares if first value is greater than second value
+        render_compare(idx1);
+        return easy_array[idx0] > easy_array[idx1];
+      }
+
+      const easy_swap = (idx0, idx1) => {
+        render_swap(idx0, idx1);
+        const temp = easy_array[idx1];
+        easy_array[idx1] = easy_array[idx0];
+        easy_array[idx0] = temp;
+      }
+
+      const easy_run = () => {
+
+      }
+      // #endregion
+
+      // #reigon algorithms
+      const SELECTION_SORT = () => {
+
+      }
+      const BUBBLE_SORT = () => {
+
+      }
+      const INSERTION_SORT = () => {
+        easy_loop(0, easy_array.length - 1, (i) => {
+          let j = i;
+          while (j > 0 && easy_compare(j - 1, j)) {
+            easy_swap(j - 1, j)
+            j--;
+          }
+        })
+      }
+      const MERGE_SORT = () => {
+        const merge = () => {
+
+        }
+
+        const sort = () => {
+
+        }
+      }
+      const SHELL_SORT = () => {
+
+      }
+      const COUNTING_SORT = () => {
+
+      }
+      const CYCLE_SORT = () => {
+
+      }
+      const GNOME_SORT = () => {
+
+      }
+      const COMB_SORT = () => {
+
+      }
+      const TIM_SORT = () => {
+
+      }
+      // #endregion
+
+      const RANDOMIZE = () => {
+        easy_loop(0, easy_array.length - 2, (i) => {
+          const randIdx = random(i + 1, easy_array.length - 1)
+          console.log(i, randIdx)
+          easy_swap(i, randIdx)
+        })
+      }
+
+      // #region animation
+
+      // #endregion
+
+      easy_create(num);
+      RANDOMIZE();
+      INSERTION_SORT();
+
+      render_instruct.forEach((instruct) => {
+        
+      })
+    })()
+  </script>
+</body>
+
+</html>
