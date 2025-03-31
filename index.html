@@ -16,7 +16,7 @@
       background: #000;
       width: 100%;
       height: 100%;
-      padding: 10px;
+      padding: 5px;
       box-sizing: border-box;
       display: flex;
       flex-direction: row;
@@ -40,7 +40,10 @@
       let arrayAccess = 0;
       let comparison = 0;
 
-      const num = 16
+      const rainbow = false;
+      const num = 128;
+      const skipRandomize = true;
+      const delay = 5; // IN MILLISECOND
 
       const random = (min, max) => {
         return Math.floor(Math.random() * (max - min + 1) + min)
@@ -53,13 +56,50 @@
         select: "#00f",
         compare: "#f00",
         swap: "#f0f",
+        success: "#0f0",
+      }
+
+      const get_default_color = (idx) => {
+        return () => {
+          if (rainbow) {
+            const el = render_elements[idx]
+            return `hsl(${(el.style.height.substring(0, el.style.height.length - 1) / 100 * 360)}, 100%, 50%`;
+          } else {
+            return colors.default;
+          }
+        }
+      }
+
+      const get_other_color = (color) => {
+        return () => {
+          if (rainbow) {
+            return colors.default;
+          } else {
+            return color
+          }
+        }
+      }
+
+      const render_default_both = (idx0, idx1) => {
+        render_instruct.push({
+          type: "multi",
+          instruct: [{
+            type: "color",
+            index: idx0,
+            value: get_default_color(idx0)
+          }, {
+            type: "color",
+            index: idx1,
+            value: get_default_color(idx1)
+          }]
+        })
       }
 
       const render_default = (idx) => {
         render_instruct.push({
           type: "color",
           index: idx,
-          value: colors.default
+          value: get_default_color(idx)
         })
       }
 
@@ -67,7 +107,22 @@
         render_instruct.push({
           type: "color",
           index: idx,
-          value: colors.select
+          value: get_other_color(colors.select)
+        })
+      }
+
+      const render_compare_both = (idx0, idx1) => {
+        render_instruct.push({
+          type: "multi",
+          instruct: [{
+            type: "color",
+            index: idx0,
+            value: get_other_color(colors.compare)
+          }, {
+            type: "color",
+            index: idx1,
+            value: get_other_color(colors.compare)
+          }]
         })
       }
 
@@ -75,7 +130,15 @@
         render_instruct.push({
           type: "color",
           index: idx,
-          value: colors.compare
+          value: get_other_color(colors.compare)
+        })
+      }
+
+      const render_success = (idx) => {
+        render_instruct.push({
+          type: "color",
+          index: idx,
+          value: get_other_color(colors.success)
         })
       }
 
@@ -86,32 +149,33 @@
             {
               type: "color",
               index: idx0,
-              value: colors.swap
+              value: get_other_color(colors.swap)
             },
             {
               type: "color",
               index: idx1,
-              value: colors.swap
+              value: get_other_color(colors.swap)
             },
+            {
+              type: "swap",
+              index0: idx0,
+              index1: idx1
+            }
           ]
         })
-        render_instruct.push({
-          type: "swap",
-          index0: idx0,
-          index1: idx1
-        })
+
         render_instruct.push({
           type: "multi",
           instruct: [
             {
               type: "color",
               index: idx0,
-              value: colors.default
+              value: get_default_color(idx0)
             },
             {
               type: "color",
               index: idx1,
-              value: colors.default
+              value: get_default_color(idx1)
             },
           ]
         })
@@ -119,15 +183,42 @@
 
       // #region easy starter pack
       let easy_array = [];
-      let easy_elements = [];
+      let render_elements = [];
 
       const easy_create = (n) => {
-        for (let i = 0; i < n; i++) {
-          easy_array[i] = i + 1;
+        if (skipRandomize) {
+          for (let i = 0; i < n; i++) {
+            easy_array[i] = i + 1;
+          }
+          for (let i = 0; i < easy_array.length - 1; i++) {
+            const randIdx = random(i + 1, easy_array.length - 1);
+            const temp = easy_array[i];
+            easy_array[i] = easy_array[randIdx];
+            easy_array[randIdx] = temp;
+          }
+          for (let i = 0; i < n; i++) {
+            const rect = document.createElement("div");
+            if (rainbow)
+              rect.setAttribute("style", `height: ${((easy_array[i]) / num) * 100}%; order: ${i}; background: hsl(${((i + 1) / num) * 360}, 100%, 50%)`);
+            else
+              rect.setAttribute("style", `height: ${((easy_array[i]) / num) * 100}%; order: ${i}; background: white`);
+            document.querySelector("body").appendChild(rect);
 
-          const rect = document.createElement("div");
-          rect.setAttribute("style", `height: ${((i + 1) / num) * 100}%; order: ${i}; background: white`);
-          document.querySelector("body").appendChild(rect);
+            render_elements[i] = rect;
+          }
+        } else {
+          for (let i = 0; i < n; i++) {
+            easy_array[i] = i + 1;
+
+            const rect = document.createElement("div");
+            if (rainbow)
+              rect.setAttribute("style", `height: ${((i + 1) / num) * 100}%; order: ${i}; background: hsl(${((i + 1) / num) * 360}, 100%, 50%)`);
+            else
+              rect.setAttribute("style", `height: ${((i + 1) / num) * 100}%; order: ${i}; background: white`);
+            document.querySelector("body").appendChild(rect);
+
+            render_elements[i] = rect;
+          }
         }
       }
 
@@ -139,13 +230,35 @@
         }
       }
 
+      const easy_success = (min, max, func) => {
+        for (let i = min; i <= max; i++) {
+          render_select(i);
+          render_success(i);
+        }
+      }
+
       const easy_randomize = () => {
 
       }
 
-      const easy_compare = (idx0, idx1) => { // compares if first value is greater than second value
+      const easy_compare_great = (idx0, idx1) => { // compares if first value is greater than second value
+        const compare = easy_array[idx0] > easy_array[idx1];
+        render_compare(idx0);
         render_compare(idx1);
-        return easy_array[idx0] > easy_array[idx1];
+        if (!compare) {
+          render_default_both(idx0, idx1);
+        }
+        return compare;
+      }
+
+      const easy_compare_less = (idx0, idx1) => { // compares if first value is greater than second value
+        const compare = easy_array[idx0] < easy_array[idx1];
+        render_compare(idx0);
+        render_compare(idx1);
+        if (!compare) {
+          render_default_both(idx0, idx1);
+        }
+        return compare;
       }
 
       const easy_swap = (idx0, idx1) => {
@@ -170,7 +283,7 @@
       const INSERTION_SORT = () => {
         easy_loop(0, easy_array.length - 1, (i) => {
           let j = i;
-          while (j > 0 && easy_compare(j - 1, j)) {
+          while (j > 0 && easy_compare_less(j, j - 1)) {
             easy_swap(j - 1, j)
             j--;
           }
@@ -206,11 +319,16 @@
       // #endregion
 
       const RANDOMIZE = () => {
-        easy_loop(0, easy_array.length - 2, (i) => {
-          const randIdx = random(i + 1, easy_array.length - 1)
-          console.log(i, randIdx)
-          easy_swap(i, randIdx)
-        })
+        if (!skipRandomize)
+          easy_loop(0, easy_array.length - 2, (i) => {
+            const randIdx = random(i + 1, easy_array.length - 1)
+            easy_swap(i, randIdx)
+          })
+      }
+
+      const SUCCESS = () => {
+        if (!rainbow)
+          easy_success(0, easy_array.length - 1)
       }
 
       // #region animation
@@ -218,12 +336,98 @@
       // #endregion
 
       easy_create(num);
-      RANDOMIZE();
+      //RANDOMIZE();
+      //RANDOMIZE_SKIP();
       INSERTION_SORT();
+      SUCCESS();
+      console.log(render_instruct);
 
-      render_instruct.forEach((instruct) => {
-        
-      })
+      const evaluate_instruction_inner = (instruction) => {
+        switch (instruction.type) {
+          case "color":
+            const element0 = render_elements[instruction.index];
+            element0.style.background = instruction.value();
+            break;
+          case "swap":
+            const element1 = render_elements[instruction.index0];
+            const element2 = render_elements[instruction.index1];
+            const temp = element1.style.height
+            element1.style.height = element2.style.height;
+            element2.style.height = temp;
+            break;
+        }
+      }
+
+      const evaluate_instruction = (instruction) => {
+        switch (instruction.type) {
+          case "color": case "swap":
+            evaluate_instruction_inner(instruction);
+            break;
+          case "multi":
+            instruction.instruct.forEach((i) => {
+              evaluate_instruction_inner(i);
+            });
+            break;
+        }
+      }
+
+      const run_instructions = () => {
+        const totalFrames = render_instruct.length;
+
+        let startTime
+        let runnin = false
+
+        let then
+
+        let previous = 0;
+
+        const frame = () => {
+          const now = performance.now();
+          const totalTimeElapsed = performance.now() - startTime;
+          const elapsed = now - then
+
+          if (totalTimeElapsed < (totalFrames * delay) && runnin) {
+            requestAnimationFrame(frame);
+
+            if (elapsed > delay) {
+              then = now - (elapsed % delay);
+              const currentIdx = Math.floor(totalTimeElapsed / delay)
+              if (currentIdx - previous > 1) {
+                for (let i = previous + 1; i < currentIdx; i++) {
+                  evaluate_instruction(render_instruct[i]);
+                }
+              }
+              evaluate_instruction(render_instruct[currentIdx]);
+              previous = currentIdx
+            }
+          } else {
+            if (previous != render_instruct.length - 1) {
+              for (let i = previous + 1; i < render_instruct.length; i++) {
+                evaluate_instruction(render_instruct[i]);
+              }
+            }
+            runnin = false;
+          }
+        }
+
+        // function that will print out frames in 5 seconds
+        const run = () => {
+          if (render_instruct.length > 0)
+            runnin = true
+
+          startTime = performance.now();
+
+          then = startTime;
+
+          evaluate_instruction(render_instruct[0]);
+
+          frame();
+        }
+
+        run();
+      }
+
+      run_instructions();
     })()
   </script>
 </body>
