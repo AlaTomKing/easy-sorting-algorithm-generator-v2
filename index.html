@@ -36,110 +36,159 @@
 <body>
 
   <script>
+    // create web audio api context
+    let lastFreq;
+    var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playNote(frequency, duration) {
+      if (lastFreq != frequency) {
+      // create Oscillator node
+      // audioCtx.resume();
+      var oscillator = audioCtx.createOscillator();
+      var gainNode = audioCtx.createGain();
+
+      oscillator.type = 'triangle';
+      oscillator.frequency.value = frequency; // value in hertz
+      gainNode.gain.value = 0.1;
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.start();
+
+      setTimeout(
+        function () {
+          oscillator.stop();
+        }, duration);
+
+      if (!lastFreq || frequency != lastFreq)
+        lastFreq = frequency;
+      }
+    }
+  </script>
+
+  <script>
     (() => {
       let arrayAccess = 0;
       let comparison = 0;
 
-      const rainbow = false;
+      const rainbow = true;
       const num = 128;
-      const skipRandomize = true;
-      const delay = 5; // IN MILLISECOND
+      const skipRandomize = false; 
+      const delay = 20;  // IN MILLISECOND
+
+      const frequency_min = 100;
+      const frequency_max = 1500; 
+      const frequency_amount = 100;
 
       const random = (min, max) => {
         return Math.floor(Math.random() * (max - min + 1) + min)
       }
 
+      const playNoteFromValue = (element) => {
+        const stringHeight = element.style.height;
+        const height = Number(stringHeight.substring(0, stringHeight.length - 1)) / 100;
+
+        playNote(frequency_min + (frequency_max - frequency_min) * height, frequency_amount);
+      }
+
       // #region render pack
+      let render_add = false;
+      let render_add_amount = 0;
       let render_instruct = [];
+      let dots = false;
+
+      let colorTable = [];
+
+      const css_height = (el, val) => {
+
+      }
+
+      const css_color = (el, val) => {
+
+      }
+
+      const css_order = (el, order) => {
+
+      }
+
+      const css_all = (el, val) => {
+
+      }
+
       const colors = {
         default: "#fff",
         select: "#00f",
         compare: "#f00",
-        swap: "#f0f",
+        set: "#f0f",
         success: "#0f0",
       }
 
-      const get_default_color = (idx) => {
-        return () => {
-          if (rainbow) {
-            const el = render_elements[idx]
-            return `hsl(${(el.style.height.substring(0, el.style.height.length - 1) / 100 * 360)}, 100%, 50%`;
-          } else {
-            return colors.default;
+      const render_merge = (amount) => {
+        let list = []
+
+        for (let i = 0; i <= amount; i++) {
+          const instruct = render_instruct.pop();
+
+          switch (instruct.type) {
+            case "color": case "swap":
+              list.push(instruct);
+              break;
+            case "multi":
+              instruct.instruct.reverse().forEach((ins) => {
+                list.push(ins);
+              })
+              break;
           }
         }
-      }
 
-      const get_other_color = (color) => {
-        return () => {
-          if (rainbow) {
-            return colors.default;
-          } else {
-            return color
-          }
-        }
-      }
-
-      const render_default_both = (idx0, idx1) => {
         render_instruct.push({
           type: "multi",
-          instruct: [{
-            type: "color",
-            index: idx0,
-            value: get_default_color(idx0)
-          }, {
-            type: "color",
-            index: idx1,
-            value: get_default_color(idx1)
-          }]
+          instruct: list.reverse()
         })
+      }
+
+      const get_color = (idx, color) => {
+        return () => {
+          if (rainbow) {
+            if (color == "default") {
+              const el = render_elements[idx]
+              return `hsl(${(el.style.height.substring(0, el.style.height.length - 1) / 100 * 360)}, 100%, 50%`;
+            } else {
+              return colors.default;
+            }
+          } else {
+            return colors[color]
+          }
+        }
+      }
+
+      const render_color = (idx, color) => {
+        render_instruct.push({
+          type: "color",
+          index: idx,
+          value: get_color(idx, color)
+        })
+        if (!render_add && render_add_amount > 0) {
+          render_merge(render_add_amount);
+          render_add_amount = 0;
+        }
       }
 
       const render_default = (idx) => {
-        render_instruct.push({
-          type: "color",
-          index: idx,
-          value: get_default_color(idx)
-        })
+        render_color(idx, "default");
       }
 
       const render_select = (idx) => {
-        render_instruct.push({
-          type: "color",
-          index: idx,
-          value: get_other_color(colors.select)
-        })
-      }
-
-      const render_compare_both = (idx0, idx1) => {
-        render_instruct.push({
-          type: "multi",
-          instruct: [{
-            type: "color",
-            index: idx0,
-            value: get_other_color(colors.compare)
-          }, {
-            type: "color",
-            index: idx1,
-            value: get_other_color(colors.compare)
-          }]
-        })
+        render_color(idx, "select");
       }
 
       const render_compare = (idx) => {
-        render_instruct.push({
-          type: "color",
-          index: idx,
-          value: get_other_color(colors.compare)
-        })
+        render_color(idx, "compare");
       }
 
       const render_success = (idx) => {
-        render_instruct.push({
-          type: "color",
-          index: idx,
-          value: get_other_color(colors.success)
-        })
+        render_color(idx, "success");
       }
 
       const render_swap = (idx0, idx1) => {
@@ -149,12 +198,12 @@
             {
               type: "color",
               index: idx0,
-              value: get_other_color(colors.swap)
+              value: get_color(idx0, "set")
             },
             {
               type: "color",
               index: idx1,
-              value: get_other_color(colors.swap)
+              value: get_color(idx1, "set")
             },
             {
               type: "swap",
@@ -170,20 +219,106 @@
             {
               type: "color",
               index: idx0,
-              value: get_default_color(idx0)
+              value: get_color(idx0, "default")
             },
             {
               type: "color",
               index: idx1,
-              value: get_default_color(idx1)
+              value: get_color(idx1, "default")
             },
           ]
         })
+        if (!render_add && render_add_amount > 0) {
+          render_merge(render_add_amount);
+          render_add_amount = 0;
+        }
+      }
+
+      const render_mark = (idx, color) => {
+        render_instruct.push({
+          type: "mark",
+          index: idx,
+          value: colors[color]
+        });
+        if (!render_add && render_add_amount > 0) {
+          render_merge(render_add_amount);
+          render_add_amount = 0;
+        }
+      }
+
+      const render_set = (idx, value) => {
+        render_instruct.push({
+          type: "multi",
+          instruct: [
+            {
+              type: "set",
+              index: idx,
+              value: value
+            },
+            {
+              type: "color",
+              index: idx,
+              value: get_color(idx, "set")
+            }
+          ]
+        })
+        render_instruct.push({
+          type: "color",
+          index: idx,
+          value: get_color(idx, "default")
+        })
+        if (!render_add && render_add_amount > 0) {
+          render_merge(render_add_amount);
+          render_add_amount = 0;
+        }
+      }
+
+      const add_default = (idx) => {
+        render_add = true;
+        //render_add_amount++;
+        render_default(idx);
+        render_add = false;
+      }
+
+      const add_select = (idx) => {
+        render_add = true;
+        //render_add_amount++;
+        render_select(idx);
+        render_add = false;
+      }
+
+      const add_compare = (idx) => {
+        render_add = true;
+        //render_add_amount++;
+        render_compare(idx);
+        render_add = false;
+      }
+
+      const add_success = (idx) => {
+        render_add = true;
+        //render_add_amount++;
+        render_success(idx);
+        render_add = false;
+      }
+
+      const add_swap = (idx0, idx1) => {
+        render_add = true;
+        //render_add_amount++;
+        render_swap(idx0, idx1);
+        render_add = false;
+      }
+
+      const add_set = (idx, value) => {
+        render_add = true;
+        //render_add_amount++;
+        render_set(idx, value);
+        render_add = false;
       }
 
       // #region easy starter pack
       let easy_array = [];
       let render_elements = [];
+      let easy_early_return = false;
 
       const easy_create = (n) => {
         if (skipRandomize) {
@@ -222,18 +357,30 @@
         }
       }
 
-      const easy_loop = (min, max, func) => {
+      const easy_loop = (min, max, func, hidden) => {
         for (let i = min; i <= max; i++) {
-          render_select(i);
+          if (!hidden) render_select(i);
           func(i);
-          render_default(i);
+          if (!hidden) add_default(i);
+          if (easy_early_return) break;
         }
+        easy_early_return = false;
+      }
+
+      const easy_loop_reverse = (max, min, func, hidden) => {
+        for (let i = max; i >= min; i--) {
+          if (!hidden) render_select(i);
+          func(i);
+          if (!hidden) add_default(i);
+          if (easy_early_return) break;
+        }
+        easy_early_return = false;
       }
 
       const easy_success = (min, max, func) => {
         for (let i = min; i <= max; i++) {
           render_select(i);
-          render_success(i);
+          add_success(i);
         }
       }
 
@@ -241,12 +388,27 @@
 
       }
 
+      const easy_set = (idx, val) => {
+        easy_array[idx] = val;
+        render_set(idx, val);
+      }
+
       const easy_compare_great = (idx0, idx1) => { // compares if first value is greater than second value
         const compare = easy_array[idx0] > easy_array[idx1];
         render_compare(idx0);
         render_compare(idx1);
         if (!compare) {
-          render_default_both(idx0, idx1);
+          add_default(idx0);
+          add_default(idx1);
+        }
+        return compare;
+      }
+
+      const easy_compare_great_val = (idx, val) => { // compares if first value is greater than second value
+        const compare = easy_array[idx] > val;
+        render_compare(idx);
+        if (!compare) {
+          add_default(idx);
         }
         return compare;
       }
@@ -256,7 +418,8 @@
         render_compare(idx0);
         render_compare(idx1);
         if (!compare) {
-          render_default_both(idx0, idx1);
+          add_default(idx0);
+          add_default(idx1);
         }
         return compare;
       }
@@ -266,6 +429,10 @@
         const temp = easy_array[idx1];
         easy_array[idx1] = easy_array[idx0];
         easy_array[idx0] = temp;
+      }
+
+      const easy_break = () => {
+        easy_early_return = true;
       }
 
       const easy_run = () => {
@@ -278,7 +445,16 @@
 
       }
       const BUBBLE_SORT = () => {
-
+        easy_loop(0, easy_array.length - 2, (i) => {
+          let swapped = false;
+          easy_loop(0, easy_array.length - i - 2, (j) => {
+            if (easy_compare_great(j, j + 1)) {
+              swapped = true;
+              easy_swap(j, j + 1);
+            }
+          });
+          if (!swapped) easy_break();
+        }, true)
       }
       const INSERTION_SORT = () => {
         easy_loop(0, easy_array.length - 1, (i) => {
@@ -287,7 +463,7 @@
             easy_swap(j - 1, j)
             j--;
           }
-        })
+        });
       }
       const MERGE_SORT = () => {
         const merge = () => {
@@ -298,9 +474,41 @@
 
         }
       }
+      /*const SHELL_SORT = () => {
+        let interval = Math.floor(easy_array.length / 2);
+        while (interval > 0) {
+          easy_loop(interval, easy_array.length - 1, (i) => {
+            const temp = easy_array[i];
+            let j = i
+            while (j >= interval && easy_compare_great_val(j - interval, temp)) {
+              easy_set(j, easy_array[j - interval]);
+              j -= interval;
+            }
+            easy_set(j, temp);
+          })
+          interval = Math.floor(interval / 2);
+        }
+      }*/
       const SHELL_SORT = () => {
+        var n = easy_array.length;
 
-      }
+        for (var gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+          //for (let i = gap; i < n; i++) {
+          easy_loop(gap, n - 1, (i) => {
+            const temp = easy_array[i];
+            let j = i;
+
+            while (j >= gap && easy_array[j - gap] > temp) {
+              //while (j >= gap && easy_compare_great_val(j - gap, temp)) {
+              easy_set(j, easy_array[j - gap]);
+              j -= gap;
+            }
+            //for (j = i; j >= gap && easy_array[j - gap] > temp; j -= gap)
+            easy_set(j, temp);
+          })
+        }
+        return easy_array;
+      };
       const COUNTING_SORT = () => {
 
       }
@@ -335,18 +543,13 @@
 
       // #endregion
 
-      easy_create(num);
-      //RANDOMIZE();
-      //RANDOMIZE_SKIP();
-      INSERTION_SORT();
-      SUCCESS();
-      console.log(render_instruct);
-
       const evaluate_instruction_inner = (instruction) => {
         switch (instruction.type) {
           case "color":
             const element0 = render_elements[instruction.index];
-            element0.style.background = instruction.value();
+            const color = instruction.value()
+            playNoteFromValue(element0);
+            element0.style.background = color == colors.default ? (colorTable[instruction.index] || colors.default) : color;
             break;
           case "swap":
             const element1 = render_elements[instruction.index0];
@@ -355,12 +558,22 @@
             element1.style.height = element2.style.height;
             element2.style.height = temp;
             break;
+          case "mark":
+            colorTable[instruction.index] = instruction.value;
+            const element3 = render_elements[instruction.index];
+            element3.style.background = instruction.value;
+            break;
+          case "set":
+            //console.log("set")
+            const element4 = render_elements[instruction.index];
+            element4.style.height = ((instruction.value / num) * 100) + "%"
+            break;
         }
       }
 
       const evaluate_instruction = (instruction) => {
         switch (instruction.type) {
-          case "color": case "swap":
+          case "color": case "swap": case "mark": case "set":
             evaluate_instruction_inner(instruction);
             break;
           case "multi":
@@ -412,6 +625,11 @@
 
         // function that will print out frames in 5 seconds
         const run = () => {
+          if (render_add_amount > 0) {
+            render_merge(render_add_amount - 1);
+            render_add_amount = 0;
+          }
+
           if (render_instruct.length > 0)
             runnin = true
 
@@ -427,6 +645,15 @@
         run();
       }
 
+      easy_create(num);
+
+      if (!skipRandomize)
+        RANDOMIZE();
+
+      SHELL_SORT();
+      SUCCESS();
+      console.log(easy_array);
+      //console.log(render_instruct);
       run_instructions();
     })()
   </script>
