@@ -23,7 +23,7 @@
       justify-content: center;
       align-items: flex-end;
       overflow: hidden;
-      gap: 1px;
+      gap: 0px;
     }
 
     div {
@@ -34,35 +34,54 @@
 </head>
 
 <body>
+  <!-- SETUP -->
+  <script>
+    const rainbow = true;
+    const num = 1024;
+    const skipRandomize = false; 
+    const delay = 1;  // IN MILLISECOND
+
+    const frequency_min = 100;
+    const frequency_max = 1500;
+    const frequency_length = 175;
+    const frequency_gain = 0.025;  
+    const frequency_decay = 0.03;
+  </script>
 
   <script>
     // create web audio api context
     let lastFreq;
     var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+    var gainNode = audioCtx.createGain();
+    //gainNode.gain.value = frequency_gain;
+    gainNode.gain.linearRampToValueAtTime(
+      frequency_gain,
+      audioCtx.currentTime + frequency_decay
+    );
+
+    gainNode.connect(audioCtx.destination);
+
     function playNote(frequency, duration) {
       if (lastFreq != frequency) {
-      // create Oscillator node
-      // audioCtx.resume();
-      var oscillator = audioCtx.createOscillator();
-      var gainNode = audioCtx.createGain();
+        // create Oscillator node
+        // audioCtx.resume();
+        var oscillator = audioCtx.createOscillator();
 
-      oscillator.type = 'triangle';
-      oscillator.frequency.value = frequency; // value in hertz
-      gainNode.gain.value = 0.1;
+        oscillator.type = 'triangle';
+        oscillator.frequency.value = frequency; // value in hertz
 
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
+        oscillator.connect(gainNode);
 
-      oscillator.start();
+        oscillator.start();
 
-      setTimeout(
-        function () {
-          oscillator.stop();
-        }, duration);
+        setTimeout(
+          function () {
+            oscillator.stop();
+          }, duration);
 
-      if (!lastFreq || frequency != lastFreq)
-        lastFreq = frequency;
+        if (!lastFreq || frequency != lastFreq)
+          lastFreq = frequency;
       }
     }
   </script>
@@ -72,15 +91,6 @@
       let arrayAccess = 0;
       let comparison = 0;
 
-      const rainbow = true;
-      const num = 128;
-      const skipRandomize = false; 
-      const delay = 20;  // IN MILLISECOND
-
-      const frequency_min = 100;
-      const frequency_max = 1500; 
-      const frequency_amount = 100;
-
       const random = (min, max) => {
         return Math.floor(Math.random() * (max - min + 1) + min)
       }
@@ -89,7 +99,7 @@
         const stringHeight = element.style.height;
         const height = Number(stringHeight.substring(0, stringHeight.length - 1)) / 100;
 
-        playNote(frequency_min + (frequency_max - frequency_min) * height, frequency_amount);
+        playNote(frequency_min + (frequency_max - frequency_min) * height, frequency_length);
       }
 
       // #region render pack
@@ -325,6 +335,7 @@
           for (let i = 0; i < n; i++) {
             easy_array[i] = i + 1;
           }
+          //easy_array.reverse()
           for (let i = 0; i < easy_array.length - 1; i++) {
             const randIdx = random(i + 1, easy_array.length - 1);
             const temp = easy_array[i];
@@ -510,7 +521,31 @@
         return easy_array;
       };
       const COUNTING_SORT = () => {
+        const size = easy_array.length;
+        const maxNum = Math.max(...easy_array)
+        let output = new Array(size).fill(0);
 
+        console.log(maxNum)
+        let count = new Array(maxNum + 1).fill(0);
+
+        easy_loop(0, size-1, (i) => {
+          count[easy_array[i]] += 1
+        });
+
+        easy_loop(0, maxNum-1, (i) => {
+          count[i+1] += count[i];
+        });
+
+        let i = size - 1
+        while (i >= 0) {
+          output[count[easy_array[i]] - 1] = easy_array[i]
+          count[easy_array[i]] -= 1
+          i -= 1
+        }
+
+        easy_loop(0, size-1, (i) => {
+          easy_set(i, output[i]);
+        })
       }
       const CYCLE_SORT = () => {
 
@@ -620,6 +655,9 @@
               }
             }
             runnin = false;
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000)
           }
         }
 
@@ -650,7 +688,29 @@
       if (!skipRandomize)
         RANDOMIZE();
 
-      SHELL_SORT();
+      switch (Math.floor(Math.random() * 4)) {
+        case 0:
+          document.title = "Bubble Sort"
+          BUBBLE_SORT();
+          break;
+        case 1:
+          document.title = "Insertion Sort"
+          INSERTION_SORT();
+          break;
+        case 2:
+          document.title = "Shell Sort"
+          SHELL_SORT();
+          break;
+        case 3:
+          document.title = "Counting Sort"
+          COUNTING_SORT();
+          break;
+        default:
+          document.title = "Bubble Sort"
+          BUBBLE_SORT();
+          break;
+      }
+
       SUCCESS();
       console.log(easy_array);
       //console.log(render_instruct);
