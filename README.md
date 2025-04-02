@@ -11,6 +11,8 @@ This is also licensed under the MIT License but that's okay, you can still take 
 - Insertion sort
 - Selection sort
 - Merge sort
+- Shell sort
+- Counting sort
 
 ## What?
 Just read the description from my v1 page because I am too lazy to write anything and I hope your questions are answered.
